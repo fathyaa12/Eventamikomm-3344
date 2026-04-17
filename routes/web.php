@@ -34,6 +34,7 @@ Route::get('/admin/event', function () {
     return view('admin.event');
 });
 
+
 Route::get('/admin/transactions', function () {
     return view('admin.transactions');
 });
