@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EventController as EventAdminController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/tentang', function () {
@@ -50,3 +52,12 @@ Route::get('/event-detail', function () {
 Route::get('/chekout', function () {
     return view('layouts.chekout');
 });
+
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::resource('events', EventAdminController::class);
+});
+
+// Route::get('/dashboard', function () {
+//         return view('admin.dashboard');
+//     })->name('dashboard');
