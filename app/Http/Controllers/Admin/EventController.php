@@ -1,18 +1,13 @@
 <?php
 
-
 namespace App\Http\Controllers\Admin;
-
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-
-//
 use App\Models\Event;
 use App\Models\Category;
 use Illuminate\Support\Facades\Storage;
-
 
 class EventController extends Controller
 {
@@ -21,12 +16,10 @@ class EventController extends Controller
         return view('admin.events.index', compact('events'));
     }
 
-
     public function create() {
         $categories = Category::all();
         return view('admin.events.create', compact('categories'));
     }
-
 
     public function store(Request $request) {
         $data = $request->validate([
