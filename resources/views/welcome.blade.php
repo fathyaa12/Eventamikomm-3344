@@ -57,9 +57,19 @@
                 <h2 class="text-3xl font-extrabold mb-2">Event Terdekat</h2>
                 <p class="text-slate-500 font-medium">Jangan sampai ketinggalan acara seru minggu ini!</p>
             </div>
-            <div class="flex gap-2">
-                <button class="p-3 border rounded-xl hover:bg-white hover:shadow-md transition">Semua Kategori</button>
+           <div class="flex gap-2 flex-wrap">
+                <a href="{{ url('/') }}#events"
+                   class="px-5 py-2 {{ !request('category') ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600' }} rounded-xl font-bold transition">
+                   Semua Kategori
+                </a>
+                @foreach($categories as $cat)
+                    <a href="{{ url('/?category=' . $cat->slug) }}#events"
+                       class="px-5 py-2 {{ request('category') == $cat->slug ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600' }} rounded-xl font-bold transition hover:bg-indigo-50">
+                       {{ $cat->name }}
+                    </a>
+                @endforeach
             </div>
+        </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -140,6 +150,7 @@
                                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         <span>18-20 October 2024</span>
+
                     </div>
                     <div class="flex justify-between items-center pt-4 border-t">
                         <span class="text-2xl font-black text-indigo-600">Gratis</span>
@@ -151,4 +162,39 @@
             </div>
         </div>
     </section>
+    <section class="mt-16 mb-12">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Partner Kerja Sama</h2>
+            <p class="text-sm text-gray-500 mt-1">Didukung oleh instansi dan perusahaan terpercaya resmi AmikomEventHub</p>
+        </div>
+        <div class="flex-1 border-t border-gray-200 ml-6 hidden sm:block"></div>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        @forelse($partners as $partner)
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex flex-col items-center justify-center hover:shadow-md hover:border-indigo-100 transition-all duration-300 group">
+
+                <div class="h-16 w-full flex items-center justify-center mb-3">
+                    <img src="{{ $partner->logo_asset_url }}"
+                         alt="Logo {{ $partner->name }}"
+                         class="max-h-full max-w-[85%] object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300">
+                </div>
+
+                <span class="text-xs font-semibold text-gray-500 group-hover:text-indigo-600 transition-colors duration-300 text-center line-clamp-1">
+                    {{ $partner->name }}
+                </span>
+
+            </div>
+        @empty
+            <div class="col-span-full bg-gray-50 border border-dashed border-gray-300 rounded-xl py-12 text-center">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <p class="text-sm text-gray-500 font-medium">Belum ada partner resmi yang terdaftar.</p>
+                <p class="text-xs text-gray-400 mt-0.5">Silakan tambahkan data melalui halaman admin dashboard.</p>
+            </div>
+        @endforelse
+    </div>
+</section>
  @endsection
