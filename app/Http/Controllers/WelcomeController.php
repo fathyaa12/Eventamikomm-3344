@@ -2,31 +2,44 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Event;
 use App\Models\Category;
+use App\Models\Event;
 use App\Models\Partner;
-use Illuminate\Http\Request;
 
-class  WelcomeController extends Controller
+class WelcomeController extends Controller
 {
-
-    public function index(Request $request)
+    public function index()
     {
-        $categories = Category::all();
-        $partners = Partner::all();
+        $partners = Partner::latest()->get();
+        $categories = Category::latest()->get();
+        $events = Event::with('category')->latest()->get();
 
-        $query = Event::with('category')
-            ->where('date', '>=', now())
-            ->orderBy('date', 'asc');
-
-        if ($request->has('category') && $request->category != '') {
-            $query->whereHas('category', function ($q) use ($request) {
-                $q->where('slug', $request->category);
-            });
-        }
-    
-        $events = $query->get();
-
-        return view('welcome', compact('events', 'categories', 'partners'));
+        return view('welcome', compact(
+            'partners',
+            'categories',
+            'events'
+        ));
     }
+public function category(int $id){
+    $categories=Category::all();
+
+    $partners=Partner::all();
+
+    $events=Event::with('category')
+            ->where(
+                'category_id',
+                $id
+            )
+            ->latest()
+            ->get();
+
+    return view(
+        'welcome',
+        compact(
+            'categories',
+            'partners',
+            'events'
+        )
+    );
+}
 }

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-            // Foreign Key relasi one-to-many ke categories
+            // Foreign Key relasi one-to-many ke tabel categories
             $table->foreignId('category_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
@@ -24,5 +24,13 @@ return new class extends Migration
             $table->string('poster_path')->nullable();
             $table->timestamps();
         });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('events');
     }
 };
