@@ -12,7 +12,12 @@ class EventController extends Controller
 {
     public function index()
     {
-        $events = Event::with('category')->latest()->get();
+        $user = auth()->user();
+        if ($user->role === 'organizer') {
+            $events = Event::with('category')->where('user_id', $user->id)->latest()->get();
+        } else {
+            $events = Event::with('category')->latest()->get();
+        }
         $categories = Category::all();
 
         return view('admin.events.index', compact('events', 'categories'));
@@ -42,6 +47,9 @@ class EventController extends Controller
             $data['poster_path'] = $request->file('poster')->store('posters', 'public');
         }
 
+        // Set ownership of the event
+        $data['user_id'] = auth()->id();
+
         Event::create($data);
 
         return redirect()
@@ -51,6 +59,11 @@ class EventController extends Controller
 
     public function edit(Event $event)
     {
+        $user = auth()->user();
+        if ($user->role === 'organizer' && $event->user_id !== $user->id) {
+            abort(403, 'Akses ditolak. Ini bukan event Anda.');
+        }
+
         $categories = Category::all();
 
         return view('admin.events.edit', compact('event', 'categories'));
@@ -58,6 +71,11 @@ class EventController extends Controller
 
     public function update(Request $request, Event $event)
     {
+        $user = auth()->user();
+        if ($user->role === 'organizer' && $event->user_id !== $user->id) {
+            abort(403, 'Akses ditolak. Anda tidak bisa mengubah event ini.');
+        }
+
         $data = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'title' => 'required|string|max:255',
@@ -86,6 +104,11 @@ class EventController extends Controller
 
     public function destroy(Event $event)
     {
+        $user = auth()->user();
+        if ($user->role === 'organizer' && $event->user_id !== $user->id) {
+            abort(403, 'Akses ditolak. Anda tidak bisa menghapus event ini.');
+        }
+
         if ($event->poster_path && Storage::disk('public')->exists($event->poster_path)) {
             Storage::disk('public')->delete($event->poster_path);
         }

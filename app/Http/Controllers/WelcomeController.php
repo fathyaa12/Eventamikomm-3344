@@ -12,7 +12,7 @@ class WelcomeController extends Controller
     {
         $partners = Partner::latest()->get();
         $categories = Category::latest()->get();
-        $events = Event::with('category')->latest()->get();
+        $events = Event::with(['category', 'user'])->latest()->get();
 
         return view('welcome', compact(
             'partners',
@@ -25,7 +25,7 @@ public function category(int $id){
 
     $partners=Partner::all();
 
-    $events=Event::with('category')
+    $events=Event::with(['category', 'user'])
             ->where(
                 'category_id',
                 $id

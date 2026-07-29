@@ -150,18 +150,40 @@
                             </span>
                         </div>
 
-                        <p class="text-slate-500 text-sm mb-4">
+                        <p class="text-slate-500 text-sm mb-2">
                             {{ $event->location }}
                         </p>
 
-                        <div class="flex justify-between items-center pt-4 border-t">
-                            <span class="text-2xl font-black text-indigo-600">
-                                @if ($event->price == 0)
-                                    Gratis
-                                @else
-                                    Rp {{ number_format($event->price, 0, ',', '.') }}
-                                @endif
+                        {{-- Nama Penyelenggara --}}
+                        <div class="flex items-center gap-2 mb-4">
+                            @if($event->user && $event->user->avatar)
+                                <img src="{{ $event->user->avatar }}" alt="avatar" class="w-5 h-5 rounded-full">
+                            @else
+                                <div class="w-5 h-5 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-[9px]">
+                                    {{ $event->user ? strtoupper(substr($event->user->name, 0, 1)) : 'A' }}
+                                </div>
+                            @endif
+                            <span class="text-xs font-semibold text-slate-600">
+                                {{ $event->user ? $event->user->name : 'AmikomEventHub' }}
                             </span>
+                            @if($event->user && $event->user->role === 'organizer' && $event->user->status === 'active')
+                                <span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-md font-bold">Verified</span>
+                            @endif
+                        </div>
+
+                        <div class="flex justify-between items-center pt-4 border-t">
+                            <div class="flex flex-col">
+                                @if($event->active_tier)
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase">{{ $event->active_tier->name }}</span>
+                                @endif
+                                <span class="text-2xl font-black text-indigo-600">
+                                    @if ($event->current_price == 0)
+                                        Gratis
+                                    @else
+                                        Rp {{ number_format($event->current_price, 0, ',', '.') }}
+                                    @endif
+                                </span>
+                            </div>
 
                             <a href="{{ route('events.show', $event->id) }}"
                                 class="px-5 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold hover:bg-indigo-600 hover:text-white transition">
@@ -206,8 +228,8 @@
                 <div
                     class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 text-center hover:shadow-lg transition">
 
-                    @if ($partner->logo_url)
-                        <img src="{{ $partner->logo_url }}"
+                    @if ($partner->logo_asset_url)
+                        <img src="{{ $partner->logo_asset_url }}"
                             alt="{{ $partner->name }}"
                             class="w-20 h-20 mx-auto rounded-2xl object-cover border mb-4">
                     @else

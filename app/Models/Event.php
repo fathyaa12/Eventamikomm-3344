@@ -9,6 +9,7 @@ class Event extends Model
 {
     protected $fillable = [
         'category_id',
+        'user_id',      // Relasi kepemilikan oleh organizer
         'name',         // Ditambahkan agar sinkron dengan $event->name di Blade
         'slug',         // Ditambahkan untuk rute detail event berbasis slug
         'title',
@@ -19,6 +20,11 @@ class Event extends Model
         'stock',
         'poster_path'   // Nama file poster yang disimpan di database
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     /**
      * Cast properti tanggal agar otomatis menjadi objek Carbon
@@ -47,5 +53,46 @@ class Event extends Model
 
         // Gambar cadangan (fallback) jika data di database kosong atau file hilang
         return asset('assets/concert.png');
+    }
+
+    /**
+     * Hubungan Relasi ke Model Review
+     */
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    /**
+     * Accessor untuk mendapatkan rata-rata rating
+     */
+    public function getAverageRatingAttribute()
+    {
+        $avg = $this->reviews()->avg('rating');
+        return $avg ? round($avg, 1) : 0;
+    }
+
+    public function tiers()
+    {
+        return $this->hasMany(TicketTier::class);
+    }
+
+    public function vouchers()
+    {
+        return $this->hasMany(Voucher::class);
+    }
+
+    public function getActiveTierAttribute()
+    {
+        return $this->tiers()
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->first();
+    }
+
+    public function getCurrentPriceAttribute()
+    {
+        $activeTier = $this->active_tier;
+        return $activeTier ? $activeTier->price : $this->price;
     }
 }

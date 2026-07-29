@@ -12,6 +12,9 @@ class Partner extends Model
     
     public function getLogoAssetUrlAttribute()
     {
-        return Storage::url($this->logo_url);
+        if (str_starts_with($this->logo_url, 'http')) {
+            return $this->logo_url;
+        }
+        return Storage::disk('public')->url($this->logo_url);
     }
 }

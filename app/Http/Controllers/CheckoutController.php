@@ -31,9 +31,36 @@ class CheckoutController extends Controller
                 ->with('error', 'Mohon maaf, tiket untuk acara ini sudah habis.');
         }
 
+        $basePrice = $event->current_price;
+        $activeTier = $event->active_tier;
+
+        $discountAmount = 0;
+        $voucher = null;
+
+        if ($request->voucher_code) {
+            $voucher = \App\Models\Voucher::where('code', $request->voucher_code)->first();
+            if ($voucher && (!$voucher->valid_until || $voucher->valid_until >= now()) && ($voucher->quota === null || $voucher->quota > 0) && ($voucher->event_id === null || $voucher->event_id == $event->id)) {
+                if ($voucher->discount_percentage) {
+                    $discountAmount = $basePrice * ($voucher->discount_percentage / 100);
+                } elseif ($voucher->discount_nominal) {
+                    $discountAmount = $voucher->discount_nominal;
+                }
+                
+                if ($discountAmount > $basePrice) {
+                    $discountAmount = $basePrice;
+                }
+            } else {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Kode kupon tidak valid, sudah habis, atau tidak berlaku untuk event ini.');
+            }
+        }
+
+        $priceAfterDiscount = $basePrice - $discountAmount;
+        $adminFee = ($priceAfterDiscount <= 0) ? 0 : 5000;
+        $totalPrice = $priceAfterDiscount + $adminFee;
+
         $orderId = 'TRX-' . time() . '-' . strtoupper(Str::random(5));
-        $adminFee = 5000;
-        $totalPrice = $event->price + $adminFee;
 
         $transaction = Transaction::create([
             'event_id' => $event->id,
@@ -43,7 +70,21 @@ class CheckoutController extends Controller
             'customer_phone' => $request->customer_phone,
             'total_price' => $totalPrice,
             'status' => 'pending',
+            'voucher_id' => $voucher ? $voucher->id : null,
+            'discount_amount' => $discountAmount,
+            'ticket_tier_id' => $activeTier ? $activeTier->id : null,
         ]);
+
+        // BYPASS LOGIC: Jika gratis, langsung sukses
+        if ($totalPrice <= 0) {
+            $transaction->update(['status' => 'success']);
+            $event->decrement('stock');
+            if ($voucher && $voucher->quota !== null) {
+                $voucher->decrement('quota');
+            }
+            return redirect()->route('checkout.success', $transaction->order_id)
+                ->with('success', 'Transaksi berhasil (Gratis).');
+        }
 
         // --- INTEGRASI SNAP MIDTRANS ---
 
@@ -51,6 +92,30 @@ class CheckoutController extends Controller
         \Midtrans\Config::$isProduction = false;
         \Midtrans\Config::$isSanitized = true;
         \Midtrans\Config::$is3ds = true;
+
+        $itemDetails = [
+            [
+                'id' => $activeTier ? 'TIER-' . $activeTier->id : $event->id,
+                'price' => $basePrice,
+                'quantity' => 1,
+                'name' => $activeTier ? $event->title . ' (' . $activeTier->name . ')' : $event->title,
+            ],
+            [
+                'id' => 'ADMIN-FEE',
+                'price' => $adminFee,
+                'quantity' => 1,
+                'name' => 'Biaya Admin',
+            ],
+        ];
+
+        if ($discountAmount > 0) {
+            $itemDetails[] = [
+                'id' => 'VOUCHER',
+                'price' => -$discountAmount,
+                'quantity' => 1,
+                'name' => 'Diskon Kupon (' . $voucher->code . ')',
+            ];
+        }
 
         $params = [
             'transaction_details' => [
@@ -64,20 +129,7 @@ class CheckoutController extends Controller
                 'phone' => $request->customer_phone,
             ],
 
-            'item_details' => [
-                [
-                    'id' => $event->id,
-                    'price' => $event->price,
-                    'quantity' => 1,
-                    'name' => $event->title,
-                ],
-                [
-                    'id' => 'ADMIN-FEE',
-                    'price' => $adminFee,
-                    'quantity' => 1,
-                    'name' => 'Biaya Admin',
-                ],
-            ],
+            'item_details' => $itemDetails,
         ];
 
         try {
@@ -119,13 +171,17 @@ class CheckoutController extends Controller
     try {
         $midtransStatus = \Midtrans\Transaction::status($order_id);
 
-        if (in_array($midtransStatus->transaction_status, ['capture', 'settlement'])) {
+        if (in_array($midtransStatus->transaction_status, ['capture', 'settlement']) && $transaction->status !== 'success') {
             $transaction->update([
                 'status' => 'success',
             ]);
 
             if ($transaction->event && $transaction->event->stock > 0) {
                 $transaction->event->decrement('stock');
+            }
+
+            if ($transaction->voucher && $transaction->voucher->quota !== null) {
+                $transaction->voucher->decrement('quota');
             }
         }
 

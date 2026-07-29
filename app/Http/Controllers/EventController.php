@@ -9,6 +9,7 @@ class EventController extends Controller
 {
     public function show(Event $event)
 {
+    $event->load(['user', 'reviews.user', 'category']);
     $categories = Category::all();
     return view('event-detail', compact('event', 'categories'));
 }

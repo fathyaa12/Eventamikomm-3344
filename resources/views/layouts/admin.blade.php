@@ -28,20 +28,26 @@
             <a href="{{ route('admin.dashboard') }}"
                 class="flex items-center gap-3 px-4 py-3 hover:bg-indigo-800 rounded-xl font-bold transition">Dashboard</a>
             <a href="{{ route('admin.events.index') }}"
-                class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('events.*') ? 'bg-indigo-800 text-white' : '' }} rounded-xl font-bold transition">
+                class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.events.*') || request()->routeIs('events.*') ? 'bg-indigo-800 text-white' : '' }} rounded-xl font-bold transition">
                 Kelola Event
             </a>
-            <a href="{{ route('admin.categories.index') }}"
-                class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('categories.*') ? 'bg-indigo-800 text-white' : '' }} rounded-xl font-bold transition">
-                Kelola Categories
-            </a>
-            <a href="{{ route('admin.partners.index') }}"
-                class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('partners.*') ? 'bg-indigo-800 text-white' : '' }} rounded-xl font-bold transition">
-                Kelola Partners
-            </a>
+            @if(auth()->user()->role === 'admin')
+                <a href="{{ route('admin.categories.index') }}"
+                    class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.categories.*') || request()->routeIs('categories.*') ? 'bg-indigo-800 text-white' : '' }} rounded-xl font-bold transition">
+                    Kelola Categories
+                </a>
+                <a href="{{ route('admin.partners.index') }}"
+                    class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.partners.*') || request()->routeIs('partners.*') ? 'bg-indigo-800 text-white' : '' }} rounded-xl font-bold transition">
+                    Kelola Partners
+                </a>
+                <a href="{{ route('admin.organizers.index') }}"
+                    class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.organizers.*') ? 'bg-indigo-800 text-white' : '' }} rounded-xl font-bold transition">
+                    Kelola Penyelenggara
+                </a>
+            @endif
             <a href="{{ route('admin.transactions.index') }}"
-                class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('transaction.*') ? 'bg-indigo-800 text-white' : '' }} rounded-xl font-bold transition">
-                Kelola transaction
+                class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.transactions.*') || request()->routeIs('transactions.*') ? 'bg-indigo-800 text-white' : '' }} rounded-xl font-bold transition">
+                Kelola Transaksi
             </a>
 
 

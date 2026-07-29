@@ -26,11 +26,18 @@ class PartnerController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'logo' => 'required|image|mimes:png,jpg,jpeg|max:2048'
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
+            'logo_link' => 'nullable|url'
         ]);
 
+        if (!$request->hasFile('logo') && !$request->logo_link) {
+            return back()->withErrors(['logo' => 'Logo file atau URL logo harus diisi.'])->withInput();
+        }
 
-        $path = $request->file('logo')->store('public/partners');
+        $path = $request->logo_link;
+        if ($request->hasFile('logo')) {
+            $path = $request->file('logo')->store('partners', 'public');
+        }
 
         Partner::create([
             'name' => $request->name,
@@ -51,17 +58,24 @@ class PartnerController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'logo' => 'nullable|image|mimes:png,jpg,jpeg|max:2048'
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
+            'logo_link' => 'nullable|url'
         ]);
 
         $data = ['name' => $request->name];
 
         if ($request->hasFile('logo')) {
-
-            if(Storage::exists($partner->logo_url)) {
-                Storage::delete($partner->logo_url);
+            // Delete old file if it was a file (not URL)
+            if(!str_starts_with($partner->logo_url, 'http') && Storage::disk('public')->exists($partner->logo_url)) {
+                Storage::disk('public')->delete($partner->logo_url);
             }
-            $data['logo_url'] = $request->file('logo')->store('public/partners');
+            $data['logo_url'] = $request->file('logo')->store('partners', 'public');
+        } elseif ($request->filled('logo_link')) {
+            // Delete old file if switching to URL
+            if(!str_starts_with($partner->logo_url, 'http') && Storage::disk('public')->exists($partner->logo_url)) {
+                Storage::disk('public')->delete($partner->logo_url);
+            }
+            $data['logo_url'] = $request->logo_link;
         }
 
         $partner->update($data);
@@ -71,8 +85,8 @@ class PartnerController extends Controller
 
     public function destroy(Partner $partner)
     {
-        if(Storage::exists($partner->logo_url)) {
-            Storage::delete($partner->logo_url);
+        if(!str_starts_with($partner->logo_url, 'http') && Storage::disk('public')->exists($partner->logo_url)) {
+            Storage::disk('public')->delete($partner->logo_url);
         }
         $partner->delete();
         return redirect()->back()->with('success', 'Partner berhasil dihapus!');

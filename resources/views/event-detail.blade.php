@@ -19,15 +19,47 @@
                 <h4 class="font-bold mb-4">Penyelenggara</h4>
 
                 <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                        AH
-                    </div>
+                    @if($event->user && $event->user->avatar)
+                        <img src="{{ $event->user->avatar }}" alt="avatar" class="w-12 h-12 rounded-full border">
+                    @else
+                        <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-lg">
+                            {{ $event->user ? strtoupper(substr($event->user->name, 0, 2)) : 'AH' }}
+                        </div>
+                    @endif
 
                     <div>
-                        <p class="font-bold text-slate-800">AmikomEventHub</p>
-                        <p class="text-xs text-slate-500">Verified Organizer</p>
+                        <p class="font-bold text-slate-800 flex items-center gap-2">
+                            {{ $event->user ? $event->user->name : 'AmikomEventHub' }}
+                            @if($event->user && $event->user->role === 'organizer' && $event->user->status === 'active')
+                                <span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-md font-bold">✓ Verified</span>
+                            @endif
+                        </p>
+                        <p class="text-xs text-slate-500">{{ $event->user ? 'Verified Organizer' : 'Official Platform' }}</p>
                     </div>
                 </div>
+
+                {{-- Statistik penyelenggara --}}
+                @if($event->user)
+                    @php
+                        $organizerEvents = $event->user->events()->count();
+                        $organizerAvgRating = \App\Models\Review::whereIn('event_id', $event->user->events()->pluck('id'))->avg('rating');
+                        $organizerTotalReviews = \App\Models\Review::whereIn('event_id', $event->user->events()->pluck('id'))->count();
+                    @endphp
+                    <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 text-center">
+                        <div>
+                            <p class="text-lg font-black text-indigo-600">{{ $organizerEvents }}</p>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">Event</p>
+                        </div>
+                        <div>
+                            <p class="text-lg font-black text-amber-500">{{ $organizerAvgRating ? number_format($organizerAvgRating, 1) : '-' }}</p>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">Rating</p>
+                        </div>
+                        <div>
+                            <p class="text-lg font-black text-green-600">{{ $organizerTotalReviews }}</p>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">Ulasan</p>
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -39,9 +71,21 @@
                 {{ $event->category->name ?? 'Event' }}
             </span>
 
-            <h1 class="text-4xl md:text-5xl font-black leading-tight">
-                {{ $event->title }}
-            </h1>
+            <div class="flex items-center gap-4">
+                <h1 class="text-4xl md:text-5xl font-black leading-tight">
+                    {{ $event->title }}
+                </h1>
+                
+                @if($event->average_rating > 0)
+                    <div class="flex items-center gap-1 bg-amber-100 text-amber-600 px-3 py-1 rounded-lg">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                        <span class="font-bold">{{ $event->average_rating }}</span>
+                        <span class="text-sm">({{ $event->reviews->count() }})</span>
+                    </div>
+                @endif
+            </div>
 
             <div class="flex flex-wrap gap-6 text-slate-500 font-medium">
                 <div class="flex items-center gap-2">
@@ -89,13 +133,19 @@
             <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                 <div>
                     <p class="text-indigo-200 font-bold uppercase tracking-widest text-sm mb-2">
-                        Harga Tiket
+                        Harga Tiket @if($event->active_tier) ({{ $event->active_tier->name }}) @endif
                     </p>
 
                     <h2 class="text-5xl font-black">
-                        Rp {{ number_format($event->price, 0, ',', '.') }}
+                        Rp {{ number_format($event->current_price, 0, ',', '.') }}
                         <span class="text-lg font-medium text-indigo-200">/ orang</span>
                     </h2>
+
+                    @if($event->active_tier && $event->active_tier->end_date)
+                        <p class="mt-2 text-sm text-indigo-200">
+                            Berlaku hingga: {{ \Carbon\Carbon::parse($event->active_tier->end_date)->format('d M Y, H:i') }}
+                        </p>
+                    @endif
 
                     <p class="mt-4 text-indigo-100 flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -162,6 +212,102 @@
                     Tiket yang sudah dibeli tidak dapat direfund.
                 </li>
             </ul>
+        </div>
+        <div class="space-y-4 pt-8 border-t">
+            <h3 class="text-2xl font-bold">Ulasan & Rating ({{ $event->reviews->count() }})</h3>
+            
+            @if(session('success'))
+                <div class="bg-green-100 text-green-700 p-4 rounded-xl font-bold">
+                    {{ session('success') }}
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="bg-red-100 text-red-700 p-4 rounded-xl font-bold">
+                    {{ session('error') }}
+                </div>
+            @endif
+            @if($errors->any())
+                <div class="bg-red-100 text-red-700 p-4 rounded-xl font-bold">
+                    {{ $errors->first() }}
+                </div>
+            @endif
+
+            @php
+                $canReview = false;
+                if(auth()->check() && $event->date < now()->subDay()) {
+                    $hasPurchased = \App\Models\Transaction::where('event_id', $event->id)
+                        ->where('customer_email', auth()->user()->email)
+                        ->where('status', 'success')
+                        ->exists();
+                        
+                    $hasReviewed = $event->reviews()->where('user_id', auth()->id())->exists();
+                    
+                    if($hasPurchased && !$hasReviewed) {
+                        $canReview = true;
+                    }
+                }
+            @endphp
+
+            @if($canReview)
+                <div class="bg-indigo-50 p-6 rounded-2xl mb-8">
+                    <h4 class="font-bold text-indigo-900 mb-4">Berikan Ulasan Anda</h4>
+                    <form action="{{ route('reviews.store', $event->id) }}" method="POST">
+                        @csrf
+                        <div class="mb-4">
+                            <label class="block font-medium mb-2">Rating Bintang</label>
+                            <div class="flex gap-4">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <label class="flex items-center gap-1 cursor-pointer">
+                                        <input type="radio" name="rating" value="{{ $i }}" class="w-4 h-4 text-indigo-600" required>
+                                        {{ $i }} Bintang
+                                    </label>
+                                @endfor
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block font-medium mb-2">Testimoni (Opsional)</label>
+                            <textarea name="comment" rows="3" class="w-full border rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ceritakan pengalaman Anda..."></textarea>
+                        </div>
+                        <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700">Kirim Ulasan</button>
+                    </form>
+                </div>
+            @endif
+
+            <div class="space-y-6">
+                @forelse($event->reviews as $review)
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                @if($review->user->avatar)
+                                    <img src="{{ $review->user->avatar }}" class="w-10 h-10 rounded-full">
+                                @else
+                                    <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold">
+                                        {{ strtoupper(substr($review->user->name, 0, 1)) }}
+                                    </div>
+                                @endif
+                                <div>
+                                    <p class="font-bold text-slate-800">{{ $review->user->name }}</p>
+                                    <p class="text-xs text-slate-400">{{ $review->created_at->diffForHumans() }}</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-1 text-amber-400">
+                                @for($i = 0; $i < $review->rating; $i++)
+                                    <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                    </svg>
+                                @endfor
+                            </div>
+                        </div>
+                        @if($review->comment)
+                            <p class="text-slate-600 italic">"{{ $review->comment }}"</p>
+                        @endif
+                    </div>
+                @empty
+                    <div class="text-center p-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                        <p class="text-slate-500 font-medium">Belum ada ulasan untuk event ini.</p>
+                    </div>
+                @endforelse
+            </div>
         </div>
     </div>
 </main>

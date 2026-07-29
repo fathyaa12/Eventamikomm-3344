@@ -37,8 +37,15 @@
                         required>
                 </div>
                 <div class="mb-4">
-                    <label class="text-sm font-medium text-gray-700">Logo Berkas</label>
-                    <input type="file" name="logo" class="w-full text-xs mt-1 block" required>
+                    <label class="text-sm font-medium text-gray-700">Logo Berkas (Upload)</label>
+                    <input type="file" name="logo" class="w-full text-xs mt-1 block mb-2">
+                    
+                    <label class="text-sm font-medium text-gray-700">Atau URL Logo (Dari Internet)</label>
+                    <input type="url" name="logo_link" placeholder="https://..." class="w-full px-3 py-2 border rounded-lg mt-1 outline-none focus:ring-2 focus:ring-blue-500">
+                    
+                    @error('logo')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <button type="submit"
                     class="w-full bg-blue-600 text-white py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">Simpan</button>
