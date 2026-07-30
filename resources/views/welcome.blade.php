@@ -126,7 +126,7 @@
                     <div class="relative overflow-hidden aspect-[3/4]">
 
                         @if ($event->poster_path)
-                            <img src="{{ asset('storage/' . $event->poster_path) }}"
+                            <img src="{{ str_starts_with($event->poster_path, 'http') ? $event->poster_path : asset('storage/' . $event->poster_path) }}"
                                 alt="{{ $event->title }}"
                                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                         @else

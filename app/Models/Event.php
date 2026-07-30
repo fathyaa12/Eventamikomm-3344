@@ -46,8 +46,10 @@ class Event extends Model
      */
     public function getPosterAssetUrlAttribute()
     {
-        // Mengecek apakah file ada di storage disk public
-        if ($this->poster_path && Storage::disk('public')->exists($this->poster_path)) {
+        if ($this->poster_path) {
+            if (str_starts_with($this->poster_path, 'http')) {
+                return $this->poster_path;
+            }
             return asset('storage/' . $this->poster_path);
         }
 
