@@ -36,7 +36,12 @@ class PartnerController extends Controller
 
         $path = $request->logo_link;
         if ($request->hasFile('logo')) {
-            $path = $request->file('logo')->store('partners', 'public');
+            \Cloudinary\Configuration\Configuration::instance(env('CLOUDINARY_URL'));
+            $upload = new \Cloudinary\Api\Upload\UploadApi();
+            $response = $upload->upload($request->file('logo')->getRealPath(), [
+                'folder' => 'partners'
+            ]);
+            $path = $response['secure_url'];
         }
 
         Partner::create([

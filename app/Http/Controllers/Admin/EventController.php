@@ -44,7 +44,12 @@ class EventController extends Controller
         ]);
 
         if ($request->hasFile('poster')) {
-            $data['poster_path'] = $request->file('poster')->store('posters', 'public');
+            \Cloudinary\Configuration\Configuration::instance(env('CLOUDINARY_URL'));
+            $upload = new \Cloudinary\Api\Upload\UploadApi();
+            $response = $upload->upload($request->file('poster')->getRealPath(), [
+                'folder' => 'posters'
+            ]);
+            $data['poster_path'] = $response['secure_url'];
         }
 
         // Set ownership of the event
@@ -88,11 +93,16 @@ class EventController extends Controller
         ]);
 
         if ($request->hasFile('poster')) {
-            if ($event->poster_path && Storage::disk('public')->exists($event->poster_path)) {
+            if ($event->poster_path && !str_starts_with($event->poster_path, 'http') && Storage::disk('public')->exists($event->poster_path)) {
                 Storage::disk('public')->delete($event->poster_path);
             }
 
-            $data['poster_path'] = $request->file('poster')->store('posters', 'public');
+            \Cloudinary\Configuration\Configuration::instance(env('CLOUDINARY_URL'));
+            $upload = new \Cloudinary\Api\Upload\UploadApi();
+            $response = $upload->upload($request->file('poster')->getRealPath(), [
+                'folder' => 'posters'
+            ]);
+            $data['poster_path'] = $response['secure_url'];
         }
 
         $event->update($data);
@@ -109,7 +119,7 @@ class EventController extends Controller
             abort(403, 'Akses ditolak. Anda tidak bisa menghapus event ini.');
         }
 
-        if ($event->poster_path && Storage::disk('public')->exists($event->poster_path)) {
+        if ($event->poster_path && !str_starts_with($event->poster_path, 'http') && Storage::disk('public')->exists($event->poster_path)) {
             Storage::disk('public')->delete($event->poster_path);
         }
 
